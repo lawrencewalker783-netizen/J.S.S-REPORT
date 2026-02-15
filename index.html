@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Core | JSS Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f4f7fe; color: #1b2559; margin: 0; padding: 0; }
+        .sidebar-link { display: flex; align-items: center; gap: 12px; padding: 15px 25px; font-weight: 700; color: #a3aed0; cursor: pointer; transition: 0.3s; border-right: 4px solid transparent; }
+        .sidebar-link.active { color: #2b3674; border-right-color: #4318ff; background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(244,247,254,1) 100%); }
+        .glass-card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0px 4px 25px rgba(0, 0, 0, 0.05); }
+        .auth-input { width: 100%; padding: 12px 15px; border-radius: 12px; background: #f4f7fe; border: 2px solid transparent; font-weight: 600; outline: none; transition: 0.2s; }
+        .auth-input:focus { border-color: #4318ff; background: white; }
+        .grade-btn { background: white; border-radius: 35px; padding: 45px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: 0.3s; cursor: pointer; border: none; width: 100%; }
+        .grade-btn:hover { transform: translateY(-10px); }
+        
+        /* Ranking Table Styling */
+        .rank-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .rank-table th { background: #f8fafc; padding: 12px 8px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #edf2f7; text-align: center; }
+        .rank-table td { padding: 10px 8px; border-bottom: 1px solid #edf2f7; text-align: center; font-weight: 700; }
+        
+        @media print { 
+            .no-print { display: none !important; } 
+            body { background: white; }
+            .report-page { border: 4px solid #000 !important; margin: 0; padding: 40px; height: 100vh; page-break-after: always; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="grade-screen" class="fixed inset-0 z-[9000] bg-white flex flex-col items-center justify-center p-6">
+        <h2 class="text-[#A3AED0] font-bold tracking-[0.4em] uppercase mb-12">Select Assigned Grade</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl">
+            <button onclick="auth.pick('7')" class="grade-btn border-b-[10px] border-blue-600"><span class="text-8xl font-black block mb-2 text-blue-600">7</span><span class="text-[#A3AED0] font-bold tracking-widest uppercase">JSS One</span></button>
+            <button onclick="auth.pick('8')" class="grade-btn border-b-[10px] border-emerald-500"><span class="text-8xl font-black block mb-2 text-emerald-500">8</span><span class="text-[#A3AED0] font-bold tracking-widest uppercase">JSS Two</span></button>
+            <button onclick="auth.pick('9')" class="grade-btn border-b-[10px] border-orange-500"><span class="text-8xl font-black block mb-2 text-orange-500">9</span><span class="text-[#A3AED0] font-bold tracking-widest uppercase">JSS Three</span></button>
+        </div>
+    </div>
+
+    <div id="auth-screen" class="fixed inset-0 z-[8000] bg-[#0b1437] hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-md bg-white rounded-[40px] overflow-hidden shadow-2xl">
+            <div class="bg-[#4318ff] p-12 text-center text-white">
+                <i class="fas fa-shield-alt text-5xl mb-4"></i>
+                <h2 class="text-2xl font-black italic">APEX JSS CORE</h2>
+                <p class="text-[10px] uppercase tracking-widest opacity-70">Secure Teacher Portal</p>
+            </div>
+            <div class="p-10 space-y-4">
+                <input type="text" id="auth-user" placeholder="FULL NAME" class="auth-input">
+                <input type="text" id="auth-school" placeholder="SCHOOL NAME" class="auth-input">
+                <input type="password" id="auth-pin" placeholder="SECRET PIN" class="auth-input">
+                <button onclick="auth.process()" class="w-full bg-[#1b2559] text-white py-4 rounded-2xl font-black uppercase tracking-widest">Access My Classroom</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-layout" class="hidden flex min-h-screen">
+        <aside class="no-print w-72 bg-white border-r flex flex-col justify-between sticky top-0 h-screen py-10">
+            <div>
+                <div class="px-8 mb-10 flex items-center gap-3">
+                    <div class="bg-[#4318ff] w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"><i class="fas fa-rocket"></i></div>
+                    <h1 class="text-xl font-extrabold italic uppercase">Apex <span class="text-blue-600">Core</span></h1>
+                </div>
+                <nav>
+                    <div onclick="ui.view('dash')" id="l-dash" class="sidebar-link active"><i class="fas fa-chart-line"></i> Dashboard</div>
+                    <div onclick="ui.view('ranking')" id="l-ranking" class="sidebar-link"><i class="fas fa-list-ol"></i> Ranking Table</div>
+                    <div onclick="ui.view('enroll')" id="l-enroll" class="sidebar-link"><i class="fas fa-user-plus"></i> Class Enrollment</div>
+                    <div onclick="ui.view('grade')" id="l-grade" class="sidebar-link"><i class="fas fa-edit"></i> Grading</div>
+                    <div onclick="ui.view('reports')" id="l-reports" class="sidebar-link"><i class="fas fa-file-invoice"></i> Report Cards</div>
+                </nav>
+            </div>
+            <div class="px-6 text-center">
+                <p id="side-name" class="text-[#2b3674] font-black text-sm uppercase">--</p>
+                <p id="side-grade" class="text-[10px] font-bold text-slate-400">GRADE --</p>
+                <button onclick="location.reload()" class="mt-4 text-red-500 font-black text-[10px] uppercase">Logout</button>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-8 md:p-12">
+            <div id="v-dash" class="view space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div class="glass-card border-l-8 border-blue-600"><p class="text-[10px] font-black text-slate-400 uppercase">Overall Best</p><h3 id="top-overall" class="text-xl font-extrabold mt-1 text-blue-900">--</h3></div>
+                    <div class="glass-card border-l-8 border-emerald-500"><p class="text-[10px] font-black text-slate-400 uppercase">Best in STEM</p><h3 id="top-stem" class="text-xl font-extrabold mt-1 text-emerald-900">--</h3></div>
+                    <div class="glass-card border-l-8 border-orange-500"><p class="text-[10px] font-black text-slate-400 uppercase">Social Science</p><h3 id="top-social" class="text-xl font-extrabold mt-1 text-orange-900">--</h3></div>
+                    <div class="glass-card border-l-8 border-purple-500"><p class="text-[10px] font-black text-slate-400 uppercase">Arts & Sports</p><h3 id="top-arts" class="text-xl font-extrabold mt-1 text-purple-900">--</h3></div>
+                </div>
+                <div class="glass-card">
+                    <h3 class="font-black italic uppercase mb-6">Class Merit Summary</h3>
+                    <table class="w-full text-left">
+                        <thead class="text-slate-400 text-[10px] font-black uppercase border-b">
+                            <tr><th class="pb-4">Rank</th><th class="pb-4">Learner Name - ADM</th><th class="pb-4">Aggregate</th><th class="pb-4">Status</th></tr>
+                        </thead>
+                        <tbody id="dash-merit-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="v-ranking" class="view hidden space-y-6">
+                <div class="flex justify-between items-center"><h2 class="text-2xl font-black uppercase italic">The Eye-Opener Ranking</h2></div>
+                <div class="glass-card overflow-x-auto">
+                    <table class="rank-table">
+                        <thead id="rank-head"></thead>
+                        <tbody id="rank-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="v-enroll" class="view hidden space-y-6">
+                <div class="glass-card">
+                    <h2 class="text-xl font-black uppercase mb-6">Class Enrollment</h2>
+                    <div class="flex gap-4 mb-8">
+                        <input type="number" id="gen-count" placeholder="Number of Learners" class="auth-input max-w-xs">
+                        <button onclick="app.genTable()" class="bg-[#4318ff] text-white px-8 rounded-xl font-black">Generate</button>
+                    </div>
+                    <div id="enroll-container" class="space-y-3"></div>
+                    <button onclick="app.saveEnroll()" id="save-enroll-btn" class="hidden mt-8 bg-[#1b2559] text-white py-4 px-12 rounded-2xl font-black uppercase">Save Class List</button>
+                </div>
+            </div>
+
+            <div id="v-grade" class="view hidden">
+                <div class="glass-card max-w-xl mx-auto border-t-8 border-blue-600">
+                    <h2 class="text-center font-black uppercase mb-6">Subject Grading</h2>
+                    <select id="sel-student" onchange="ui.loadMarks()" class="auth-input mb-8 text-blue-600 font-bold border-2 border-blue-100"></select>
+                    <div id="sub-inputs" class="space-y-3"></div>
+                    <button onclick="app.postMarks()" class="w-full mt-10 bg-emerald-500 text-white py-5 rounded-2xl font-black uppercase tracking-widest shadow-xl">Post & Save Marks</button>
+                </div>
+            </div>
+
+            <div id="v-reports" class="view hidden">
+                <div class="no-print glass-card mb-10 border-b-8 border-slate-900">
+                    <div class="flex gap-4">
+                        <div class="relative flex-1">
+                            <input type="text" id="rep-search" oninput="ui.searchRep()" placeholder="Search learner for report form..." class="auth-input border-2">
+                            <div id="search-drop" class="absolute w-full bg-white shadow-2xl rounded-xl z-50 mt-2 max-h-60 overflow-y-auto"></div>
+                        </div>
+                        <button onclick="window.print()" class="bg-black text-white px-10 py-4 rounded-xl font-black uppercase text-xs">Print PDF</button>
+                    </div>
+                </div>
+                <div id="report-output">
+                    <div class="text-center py-24 text-slate-300 font-black uppercase tracking-widest italic no-print">Select a student to view their Report Form</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const SUBS = [
+            {n:'Mathematics', c:'stem', s:'MAT'}, {n:'Integrated Science', c:'stem', s:'SCI'}, 
+            {n:'Pre-Technical Studies', c:'stem', s:'PTS'}, {n:'Agriculture & Nutrition', c:'stem', s:'AGR'}, 
+            {n:'English', c:'lang', s:'ENG'}, {n:'Kiswahili', c:'lang', s:'KIS'},
+            {n:'Social Studies', c:'soc', s:'SOC'}, {n:'CRE', c:'soc', s:'CRE'}, 
+            {n:'Creative Arts & Sports', c:'arts', s:'ART'}
+        ];
+
+        let state = { u: '', s: '', g: '', data: [] };
+
+        const auth = {
+            pick: (g) => { state.g = g; document.getElementById('grade-screen').classList.add('hidden'); document.getElementById('auth-screen').classList.remove('hidden'); },
+            process: () => {
+                const name = document.getElementById('auth-user').value.toUpperCase();
+                const school = document.getElementById('auth-school').value.toUpperCase();
+                const pin = document.getElementById('auth-pin').value;
+                if(!name || !pin) return alert("Please fill Name and PIN");
+                let existing = JSON.parse(localStorage.getItem(`APEX_USER_${name}`));
+                if(existing && existing.pin === pin) { state.u = name; state.s = existing.school; } 
+                else { state.u = name; state.s = school; localStorage.setItem(`APEX_USER_${name}`, JSON.stringify({name, school, pin})); }
+                app.init();
+            }
+        };
+
+        const app = {
+            init: () => {
+                const saved = localStorage.getItem(`APEX_DATA_${state.u}_${state.g}`);
+                state.data = saved ? JSON.parse(saved) : [];
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('main-layout').classList.remove('hidden');
+                document.getElementById('side-name').innerText = state.u;
+                document.getElementById('side-grade').innerText = `GRADE ${state.g}`;
+                ui.refresh();
+            },
+            genTable: () => {
+                const c = document.getElementById('gen-count').value;
+                let h = '<table class="w-full text-left"><tr><th class="p-2 text-xs uppercase font-black">Full Name</th><th class="p-2 text-xs uppercase font-black">Admission No.</th></tr>';
+                for(let i=0; i<c; i++) h += `<tr class="e-row"><td><input class="auth-input e-name mb-1"></td><td><input class="auth-input e-adm mb-1"></td></tr>`;
+                document.getElementById('enroll-container').innerHTML = h + '</table>';
+                document.getElementById('save-enroll-btn').classList.remove('hidden');
+            },
+            saveEnroll: () => {
+                const rows = document.querySelectorAll('.e-row');
+                state.data = [];
+                rows.forEach(r => {
+                    const n = r.querySelector('.e-name').value;
+                    const a = r.querySelector('.e-adm').value;
+                    if(n) state.data.push({n: n.toUpperCase(), a, marks: {}});
+                });
+                app.sync(); ui.refresh(); alert("Registry Updated!");
+            },
+            postMarks: () => {
+                const adm = document.getElementById('sel-student').value;
+                const learner = state.data.find(l => l.a === adm);
+                if(!learner) return;
+                SUBS.forEach(sub => {
+                    const val = document.getElementById(`in-${sub.n}`).value;
+                    learner.marks[sub.n] = Math.min(parseInt(val) || 0, 100);
+                });
+                app.sync(); ui.refresh(); alert("Marks Saved to Master Record!");
+            },
+            sync: () => localStorage.setItem(`APEX_DATA_${state.u}_${state.g}`, JSON.stringify(state.data))
+        };
+
+        const ui = {
+            view: (v) => {
+                document.querySelectorAll('.view').forEach(e => e.classList.add('hidden'));
+                document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+                document.getElementById(`v-${v}`).classList.remove('hidden');
+                document.getElementById(`l-${v}`).classList.add('active');
+                if(v === 'grade') ui.prepGrade();
+            },
+            prepGrade: () => {
+                document.getElementById('sel-student').innerHTML = '<option value="">-- Choose Learner --</option>' + state.data.map(l => `<option value="${l.a}">${l.n}</option>`).join('');
+                document.getElementById('sub-inputs').innerHTML = SUBS.map(s => `<div class="flex justify-between items-center bg-slate-50 p-4 rounded-xl font-bold"><span>${s.n}</span><input type="number" id="in-${s.n}" class="auth-input w-24 text-center text-blue-600 font-black"></div>`).join('');
+            },
+            loadMarks: () => {
+                const s = state.data.find(l => l.a === document.getElementById('sel-student').value);
+                SUBS.forEach(sub => document.getElementById(`in-${sub.n}`).value = s ? (s.marks[sub.n] || "") : "");
+            },
+            searchRep: () => {
+                const q = document.getElementById('rep-search').value.toUpperCase();
+                const d = document.getElementById('search-drop');
+                if(!q) { d.innerHTML = ""; return; }
+                const f = state.data.filter(s => s.n.includes(q));
+                d.innerHTML = f.map(s => `<div onclick="ui.renderRep('${s.a}')" class="p-4 hover:bg-blue-600 hover:text-white cursor-pointer border-b font-bold text-sm flex justify-between"><span>${s.n}</span><span>${s.a}</span></div>`).join('');
+            },
+            renderRep: (adm) => {
+                document.getElementById('search-drop').innerHTML = "";
+                const s = state.data.find(l => l.a === adm);
+                const sorted = [...state.data].sort((a,b) => b.total - a.total);
+                const pos = sorted.findIndex(x => x.a === s.a) + 1;
+                const avg = s.total / SUBS.length;
+                let rem = avg >= 80 ? "Exemplary performance! Maintain this consistency." : avg >= 60 ? "Good work. You have potential for more." : avg >= 40 ? "Average progress. Focused effort required." : "Unsatisfactory. Remedial action needed.";
+
+                let rows = SUBS.map(sub => {
+                    let m = s.marks[sub.n] || 0;
+                    return `<tr class="border-b text-sm"><td class="py-4 text-left font-bold">${sub.n}</td><td class="py-4 font-black text-blue-600 text-center">${m}</td><td class="py-4 font-bold text-center">${m >= 80 ? 'EE' : m >= 60 ? 'ME' : 'AE'}</td></tr>`;
+                }).join('');
+
+                document.getElementById('report-output').innerHTML = `
+                    <div class="report-page bg-white p-12 max-w-[850px] mx-auto shadow-2xl border-[12px] border-black">
+                        <div class="text-center mb-8 border-b-4 border-black pb-4">
+                            <h1 class="text-4xl font-black uppercase text-slate-900">${state.s}</h1>
+                            <p class="font-bold tracking-[0.5em] text-blue-600 mt-2">OFFICIAL ACADEMIC REPORT</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4 font-black uppercase text-xs mb-8">
+                            <div class="bg-slate-100 p-3 rounded-lg">NAME: <span class="text-blue-700">${s.n}</span></div>
+                            <div class="bg-slate-100 p-3 rounded-lg text-center">ADM: ${s.a}</div>
+                            <div class="bg-slate-900 text-white p-3 rounded-lg text-center">POSITION: ${pos} OF ${state.data.length}</div>
+                        </div>
+                        <table class="w-full mb-10 border-collapse"><thead class="border-b-4 border-black text-xs font-black uppercase"><tr><th class="pb-3 text-left">Learning Area</th><th class="pb-3 text-center">Score</th><th class="pb-3 text-center">Level</th></tr></thead><tbody>${rows}</tbody></table>
+                        <div class="bg-slate-100 p-8 rounded-3xl flex justify-between items-center border-2 border-slate-200">
+                            <div class="w-2/3"><p class="text-[10px] font-black uppercase text-slate-400">Teacher's Remarks:</p><p class="text-sm font-bold italic mt-1">"${rem}"</p></div>
+                            <div class="text-right"><p class="text-[10px] font-black uppercase">Aggregate</p><p class="text-5xl font-black text-blue-900">${s.total}</p></div>
+                        </div>
+                        <div class="flex justify-between mt-20 text-[10px] font-black uppercase">
+                            <div class="border-t-2 border-black pt-4 w-48 text-center">Class Teacher</div>
+                            <div class="border-t-2 border-black pt-4 w-48 text-center">School Principal</div>
+                        </div>
+                    </div>`;
+            },
+            refresh: () => {
+                // Calculate totals
+                state.data.forEach(s => {
+                    let t = 0; SUBS.forEach(sub => t += (s.marks[sub.n] || 0));
+                    s.total = t;
+                });
+
+                const sorted = [...state.data].sort((a,b) => b.total - a.total);
+                
+                // Refresh Mini Dash Cards
+                if(sorted.length > 0) document.getElementById('top-overall').innerText = sorted[0].n;
+
+                // Refresh Dashboard Table
+                document.getElementById('dash-merit-body').innerHTML = sorted.map((s,i) => `
+                    <tr class="border-b"><td class="py-4 text-blue-600 font-black">${i+1}</td><td class="font-bold uppercase text-xs">${s.n} - ${s.a}</td><td class="font-black">${s.total}</td><td><span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Active</span></td></tr>
+                `).join('');
+
+                // Refresh Eye-Opener Ranking Table
+                let rHead = '<tr><th>Pos</th><th class="text-left">Learner Name</th><th>ADM</th>';
+                SUBS.forEach(s => rHead += `<th>${s.s}</th>`);
+                rHead += '<th>Total</th><th>Level</th></tr>';
+                document.getElementById('rank-head').innerHTML = rHead;
+
+                document.getElementById('rank-body').innerHTML = sorted.map((s,i) => {
+                    let cells = SUBS.map(sub => `<td>${s.marks[sub.n] || 0}</td>`).join('');
+                    let avg = s.total / SUBS.length;
+                    return `<tr><td class="text-blue-600">${i+1}</td><td class="text-left">${s.n}</td><td class="text-slate-400 font-normal">${s.a}</td>${cells}<td class="bg-blue-50 text-blue-900">${s.total}</td><td class="text-emerald-500">${avg >= 80 ? 'EE' : avg >= 60 ? 'ME' : 'AE'}</td></tr>`;
+                }).join('');
+            }
+        };
+    </script>
+</body>
+</html>
